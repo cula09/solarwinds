@@ -1,0 +1,54 @@
+#Source
+#1. https://github.com/solarwinds/OrionSDK/blob/master/Samples/PowerShell/CRUD.SettingCustomProperty.ps1
+#2. custom command write to log : https://stackoverflow.com/questions/7834656/create-log-file-in-powershell
+
+# Prepare Variable Connect to SWIS
+$hostname = "localhost"
+$username = "orion"
+$password = $username
+
+#catch sending variable from external.
+$Nodeid=$args[0]
+$lastcustomProps=$args[1]
+
+#Prepare for create action to log
+function WriteLog
+{
+    Param ([string]$LogString)
+    $Location = "C:\tools\cmd\Ps1\update-node_$Nodeid.log"
+    $DateTime = "[{0:MM/dd/yy} {0:HH:mm:ss}]" -f (Get-Date)
+    $LogMessage = "$Datetime : $LogString"
+    Add-content $Location -value $LogMessage
+}
+
+#create connection
+$swis = Connect-Swis -h $orionhostname -u $username -Password $password
+
+# define a custom property value
+$customProps = @{
+    uptimealmostreset="True";
+}
+
+#Get the node URI
+$geturi = Get-SwisData $swis "SELECT Uri FROM Orion.NodesCustomProperties where nodeID = $Nodeid"
+
+# build the node URI
+$uri = $geturi
+#uri: swis://TBSWSLWN2020./Orion/Orion.Nodes/NodeID=2951/CustomProperties
+
+#print to screen validate the url
+Write-Host "uri: $uri"
+
+# execute the custom property
+Set-SwisObject $swis -Uri $uri -Properties $customProps
+
+# execute the Custom Property Value
+######################################################### sample #########################################################################################
+##  Write-Host "Setting Custom Property uptimealmostreset :`n $( $uri )`n $( $customProps.Keys ) to $( $customProps.Values )" -ForegroundColor Yellow   ##
+######################################################### End ############################################################################################
+
+#print output to screen
+Write-Host "Setting Custom Property uptimealmostreset : $( $uri ), $( $customProps.Keys ) $lastcustomProps to $( $customProps.Values )" -ForegroundColor Yellow
+
+#print to log
+WriteLog "Setting Custom Property uptimealmostreset : $( $uri ), $( $customProps.Keys ) $lastcustomProps to $( $customProps.Values )" -ForegroundColor Yellow
