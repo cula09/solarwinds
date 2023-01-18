@@ -1,0 +1,6 @@
+SELECT  OperationInstanceID, tolocal(RecordTime) AS recordtime, OperationStatusID, ItemCount, DataSource
+FROM Orion.IpSla.OperationAvailability
+
+where OperationInstanceID='470'
+
+order by RecordTime desc
