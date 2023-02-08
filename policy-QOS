@@ -1,0 +1,7 @@
+SELECT policyID, statisticsID,  CBQoSPolicyMetric.DisplayName, CBQoSPolicyMetric.PolicyFullPathName FROM Orion.Netflow.CBQoSPolicyMetric AS CBQoSPolicyMetric
+
+where PolicyFullPathName='iix-in\group-inbound-7' AND statisticsID='2'
+
+-- pre = 1 
+-- post =2
+-- drop = 3
