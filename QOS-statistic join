@@ -1,0 +1,15 @@
+SELECT TOP 10 a.PolicyID, a.StatisticsID, tolocal(a.Timestamp) as [datetime], a.Bytes, a.Bitrate, a.ClassUtilization,
+
+CBQoSPolicyMetric.policyID, CBQoSPolicyMetric.statisticsID,  CBQoSPolicyMetric.DisplayName, CBQoSPolicyMetric.PolicyFullPathName
+
+FROM Orion.Netflow.CBQoSStatistics a
+
+JOIN
+
+Orion.Netflow.CBQoSPolicyMetric AS CBQoSPolicyMetric
+
+on a.policyID=CBQoSPolicyMetric.PolicyID
+
+where policyID='1031' AND StatisticsID='2'
+
+order by timestamp desc
