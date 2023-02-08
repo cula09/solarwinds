@@ -1,6 +1,6 @@
 SELECT TOP 10 PolicyID, StatisticsID, tolocal(Timestamp) as [datetime], Bytes, Bitrate, ClassUtilization
 FROM Orion.Netflow.CBQoSStatistics
 
-where policyID='1031'
+where policyID='1031' AND StatisticsID='2'
 
 order by timestamp desc
