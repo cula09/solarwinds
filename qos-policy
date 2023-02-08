@@ -1,0 +1,4 @@
+SELECT TOP 1000 PolicyID, NodeID, InterfaceID, PolicyMapID, ClassMapID, PolicyActionID, RateBps, DirectionID, IsActive, HasChildren, PolicyFullPathName, ParentPolicyID, RootPolicyID, StartDate, EndDate
+FROM Orion.Netflow.CBQoSPolicy
+
+where PolicyFullPathName like '%\group-inbound-7'
