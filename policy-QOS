@@ -2,6 +2,7 @@ SELECT policyID, statisticsID,  CBQoSPolicyMetric.DisplayName, CBQoSPolicyMetric
 
 where PolicyFullPathName like '%group-inbound-7' AND statisticsID='2'
 
+-- statistic
 -- pre = 1 
 -- post =2
 -- drop = 3
