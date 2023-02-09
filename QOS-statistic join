@@ -1,15 +1,25 @@
-SELECT TOP 10 a.PolicyID, a.StatisticsID, tolocal(a.Timestamp) as [datetime], a.Bytes, a.Bitrate, a.ClassUtilization,
+SELECT TOP 100 a.PolicyID, a.StatisticsID, tolocal(a.Timestamp) as [datetime], a.Bytes, a.Bitrate, a.ClassUtilization,
 
-CBQoSPolicyMetric.policyID, CBQoSPolicyMetric.statisticsID,  CBQoSPolicyMetric.DisplayName, CBQoSPolicyMetric.PolicyFullPathName
+b.PolicyID, b.NodeID, b.InterfaceID, b.PolicyMapID, b.ClassMapID, b.PolicyActionID, b.RateBps, b.DirectionID,b.PolicyFullPathName
+
 
 FROM Orion.Netflow.CBQoSStatistics a
 
 JOIN
 
-Orion.Netflow.CBQoSPolicyMetric AS CBQoSPolicyMetric
+Orion.Netflow.CBQoSPolicy b
 
-on a.policyID=CBQoSPolicyMetric.PolicyID
+on a.policyID=b.PolicyID
 
-where policyID='1031' AND StatisticsID='2'
+where a.policyID='1031' AND a.StatisticsID='2' 
 
 order by timestamp desc
+
+-- statistic
+-- pre = 1 
+-- post =2
+-- drop = 3
+
+--direction
+--1	= Ingress
+--2	= Egress
