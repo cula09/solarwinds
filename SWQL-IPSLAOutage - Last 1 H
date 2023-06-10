@@ -1,0 +1,27 @@
+SELECT TOP 5
+'IPSLA' AS  Object,
+(ToString(
+Ceiling((MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0 - Floor(MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0)) * 60)) + ' M' 
+) AS Down_Time,
+IPSLA.OperationInstanceID AS IPSLAID,
+IPSLA.DisplaySource + ' : ' + IPSLA.OperationName AS Name,
+IPSLA.DisplaySource AS Nodes,
+IPSLA.OperationStatusID AS Status,
+T1.DownTime AS [Since]
+FROM  
+	(	SELECT MAX(EventTime) AS DownTime, NetObjectID, 'IP SLA' AS Type
+       FROM    orion.Events
+         WHERE        (EventType = 5000) AND (Message LIKE '%For Query%') AND (Message LIKE '%IP SLA%')
+        GROUP BY NetObjectID) AS T1 
+    INNER JOIN Orion.IpSla.Operations IPSLA ON T1.NetObjectID = IPSLA.OperationInstanceID
+
+WHERE IPSLA.OperationInstanceID='389'
+
+group by T1.Type,
+IPSLA.OperationInstanceID,
+IPSLA.DisplaySource,
+IPSLA.OperationName,
+IPSLA.OperationStatusID,
+T1.DownTime
+
+order by T1.DownTime DESC
