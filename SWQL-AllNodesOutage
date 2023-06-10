@@ -1,0 +1,39 @@
+SELECT T1.Type, 
+'Nodes' AS [Object],
+(ToString(
+DayDiff(0, GETUTCDATE() - MAX(T1.DownTime))) + ' Days ' + 
+ToString(
+Ceiling((HourDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 24.0 - Floor(HourDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 24.0)) * 24)) + ' H ' + 
+ToString(
+Ceiling((MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0 - Floor(MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0)) * 60)) + ' M' 
+) AS Down_Time,
+--Nodes.NodeID, 
+Nodes.Caption AS Name, 
+Nodes.IP_Address AS [IP Address],
+NodesCustomProperties.Customer,
+Nodes.Status,
+T1.DownTime AS [Since]
+FROM  
+	(	SELECT MAX(EventTime) AS DownTime, NetworkNode, 'Nodes' AS Type
+            FROM orion.Events
+                WHERE  (EventType = 5000) AND (NetObjectType = 'N') AND (Message LIKE 'For Query Node%') AND (Message LIKE '%Down%')
+            GROUP BY NetworkNode) AS T1 
+    INNER JOIN orion.Nodes ON T1.NetworkNode = Nodes.NodeID 
+    INNER JOIN Orion.NodesCustomProperties ON Nodes.NodeID = NodesCustomProperties.NodeID 
+	WHERE   
+            -- node down or unknown --
+            (Nodes.Status = '2' OR Nodes.Status = '0') AND 
+            -- exclude node unmange or name contain test --
+            (NOT (Nodes.Status = '9') OR (Nodes.Caption LIKE 'test%')) AND 
+            -- last 1 hours --
+            (T1.DownTime > ADDHOUR(-1,GETUTCDATE()))
+            
+group by T1.Type, 
+Nodes.NodeID, 
+Nodes.Caption ,
+NodesCustomProperties.Customer, 
+Nodes.IP_Address,
+T1.DownTime, 
+Nodes.Status
+
+order by T1.DownTime DESC
