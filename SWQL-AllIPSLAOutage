@@ -1,14 +1,16 @@
-SELECT TOP 5
+SELECT 
 'IPSLA' AS  Object,
 (ToString(
 DayDiff(0, GETUTCDATE() - MAX(T1.DownTime))) + ' Days ' + 
 ToString(
 Ceiling((HourDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 24.0 - Floor(HourDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 24.0)) * 24)) + ' H ' + 
 ToString(
-Ceiling((MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0 - Floor(MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0)) * 60)) + ' M' 
+Ceiling((MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0 - Floor(MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0)) * 60)) + ' M ' + 
+ToString(
+Ceiling((SecondDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0 - Floor(SECONDDIFF(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0)) * 60)) + ' S'
 ) AS Down_Time,
 IPSLA.OperationInstanceID AS IPSLAID,
-IPSLA.DisplaySource + ' : ' + IPSLA.OperationName AS Name,
+IPSLA.DisplaySource + ' : ' + IPSLA.OperationName +'('+ Tostring(IPSLA.IpSlaOperationNumber)+')' AS Name,
 IPSLA.DisplaySource AS Nodes,
 IPSLA.OperationStatusID AS Status,
 T1.DownTime AS [Since]
@@ -18,12 +20,13 @@ FROM
          WHERE        (EventType = 5000) AND (Message LIKE '%For Query%') AND (Message LIKE '%IP SLA%')
         GROUP BY NetObjectID) AS T1 
     INNER JOIN Orion.IpSla.Operations IPSLA ON T1.NetObjectID = IPSLA.OperationInstanceID
-
-WHERE IPSLA.OperationInstanceID='389'
+    
+    where IPSLA.OperationStatusID='2' or IPSLA.OperationStatusID='0'
 
 group by T1.Type,
 IPSLA.OperationInstanceID,
 IPSLA.DisplaySource,
+IPSLA.IpSlaOperationNumber,
 IPSLA.OperationName,
 IPSLA.OperationStatusID,
 T1.DownTime
