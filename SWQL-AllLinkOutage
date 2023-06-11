@@ -1,0 +1,27 @@
+SELECT
+NodeID, 
+InterfaceID,  
+FullName,  
+OperStatus,
+InterfacesCustomProperties.WAN_Internet_Connection_to AS Customer, 
+CASE 
+	WHEN Interfaces.OperStatus != '2' AND Interfaces.Inbps < 50 
+		THEN Interfaces.Inbps 
+	--WHEN Interfaces.OperStatus = '1' AND ((Interfaces.Inbps / InterfacesCustomProperties.Provider_Bandwidth) * 100) > 90
+		-- THEN ((Interfaces.Inbps / InterfacesCustomProperties.Provider_Bandwidth)* 100 )
+	WHEN Interfaces.OperStatus = '2' 
+		THEN Interfaces.Inbps 
+--ELSE '10' 
+END AS ReceivedTraffic, 
+Outbps, 
+Inbps
+FROM Orion.NPM.Interfaces 
+INNER JOIN Orion.NPM.InterfacesCustomProperties ON Interfaces.InterfaceID = InterfacesCustomProperties.InterfaceID
+
+--where Not(Interfaces.OperStatus = '0'  or Interfaces.OperStatus = '12'  or Interfaces.OperStatus ='9' )
+WHERE        --(Not(Interfaces.OperStatus = '0'  or Interfaces.OperStatus = '12'  or Interfaces.OperStatus ='9' ) AND 
+               -- (Interfaces.Inbps < 50)) OR
+             (Interfaces.Inbps / InterfacesCustomProperties.Provider_Bandwidth * 100 > 30) --OR
+             --(Interfaces.OperStatus = '2')
+
+order by Interfaces.OperStatus asc
