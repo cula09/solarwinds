@@ -1,0 +1,17 @@
+SELECT
+ContainerID,
+(ToString(
+DayDiff(0, GETUTCDATE() - MAX(T1.DownTime))) 
+) AS Down_Time,
+T1.DownTime,  
+Name, 
+Status,  
+StatusDescription 
+FROM 
+    (SELECT        MAX(EventTime) AS DownTime, NetObjectID, 'Group' AS Type
+       FROM    orion.Events
+         WHERE        (EventType = 5000) AND (NetObjectType = 'C') AND (Message LIKE 'For Query%') AND (Message LIKE '%Down%')
+        GROUP BY NetObjectID) AS T1 
+    INNER JOIN Orion.Container ON T1.NetObjectID = Container.ContainerID
+WHERE
+Container.Status = '2'
