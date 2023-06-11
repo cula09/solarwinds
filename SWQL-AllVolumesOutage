@@ -1,0 +1,49 @@
+SELECT 
+(ToString(
+DayDiff(0, GETUTCDATE() - MAX(T1.DownTime))) + ' Days ' + 
+ToString(
+Ceiling((HourDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 24.0 - Floor(HourDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 24.0)) * 24)) + ' H ' + 
+ToString(
+Ceiling((MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0 - Floor(MinuteDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0)) * 60)) + ' M ' + 
+ToString(
+Ceiling((SecondDiff(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0 - Floor(SECONDDIFF(0, GETUTCDATE() - MAX(T1.DownTime)) / 60.0)) * 60)) + ' S'
+) AS Down_Time, 
+Volumes.Caption, 
+Volumes.DisplayName, 
+Volumes.FullName,
+Volumes.NodeID, 
+Volumes.Status, 
+Volumes.StatusDescription,
+Volumes.VolumePercentUsed, 
+Volumes.VolumeID,
+CASE 	
+    -- volumes up & over 90%
+	WHEN (T1.type = 'Volumes' AND (Volumes.[Status] = '1' OR Volumes.[Status] = '3' OR Volumes.[Status] = '14') AND Volumes.VolumePercentUsed > 90)
+		THEN Volumes.VolumePercentUsed 
+--ELSE '' 
+END AS Condition
+
+FROM  
+	(	SELECT        MAX(EventTime) AS DownTime, NetObjectID, 'Volumes' AS Type
+            FROM orion.Events
+                WHERE        (EventType = 5000) AND (NetObjectType = 'V') AND (Message LIKE '%For Query%')
+            GROUP BY NetObjectID) AS T1  INNER JOIN
+Orion.Volumes ON T1.NetObjectID = Volumes.VolumeID LEFT OUTER JOIN
+                         orion.Nodes ON Volumes.NodeID = Nodes.NodeID
+where Not(volumes.status = '0'  or volumes.status = '12'  or volumes.status ='9' )
+--where (volumes.status = '1'  or volumes.status = '3'  or volumes.status ='14' )
+
+group BY
+Volumes.Caption, 
+Volumes.DisplayName, 
+Volumes.FullName,
+Volumes.NodeID, 
+Volumes.Status, 
+Volumes.StatusDescription,
+Volumes.VolumePercentUsed, 
+Volumes.VolumeID,
+T1.type 
+
+order by Down_Time asc
+--,
+--volumes.status ASC
