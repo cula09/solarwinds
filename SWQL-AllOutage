@@ -15,8 +15,13 @@ Name,
 Customer,
 PercentUsed,
 Status,
-Condition,
-DownTime AS Since
+
+CASE 
+	WHEN ((Type = 'Nodes' or Type = 'IP SLA') AND Status ='2')
+		THEN 'Down' 
+ELSE Condition 
+END AS Condition,
+tolocal(DownTime) AS Since
 From 
       (
         --section 3.IPSLA
@@ -30,7 +35,7 @@ From
         '' AS PercentUsed,
         --IPSLA.DisplaySource AS Nodes,
         IPSLA.OperationStatusID AS Status,
-        IPSLA.OperationStatusID AS Condition,
+        tostring(IPSLA.OperationStatusID) AS Condition,
         T1.DownTime
         FROM  
             (	SELECT MAX(EventTime) AS DownTime, NetObjectID, 'IP SLA' AS Type
@@ -50,6 +55,7 @@ From
         T1.DownTime
 
         --order by T1.DownTime DESC
+
 UNION ALL (
         --section 4.Node
         SELECT 
@@ -61,7 +67,7 @@ UNION ALL (
         NodesCustomProperties.Customer,
         '' AS PercentUsed,
         Nodes.Status,
-        Nodes.Status AS Condition,
+        tostring(Nodes.Status) AS Condition,
         T1.DownTime
         FROM  
             (SELECT MAX(EventTime) AS DownTime, NetworkNode, 'Nodes' AS Type
@@ -88,7 +94,72 @@ UNION ALL (
         
         --order by T1.DownTime DESC
         )
+
+UNION ALL (
+                        
+        --section 5.Volumes 
+        SELECT
+        T1.Type, 
+        '5' AS [ObjectPriority],
+        Volumes.VolumeID AS ObjectID,
+        Volumes.FullName AS Name,
+        Nodes.IP_Address, 
+        NodesCustomProperties.Customer, 
+        Volumes.VolumePercentUsed,
+        Volumes.Status, 
+        --Volumes.StatusDescription,
+        tostring(
+        CASE 	
+            -- volumes up & over 90%
+            WHEN (T1.type = 'Volumes' AND (Volumes.[Status] = '1' OR Volumes.[Status] = '3' OR Volumes.[Status] = '14') AND Volumes.VolumePercentUsed > 90)
+                THEN Round(Volumes.VolumePercentUsed,2) 
+        --ELSE '' 
+        END) AS Condition,
+        T1.DownTime
+
+        FROM  
+            (	SELECT        MAX(EventTime) AS DownTime, NetObjectID, 'Volumes' AS Type
+                    FROM orion.Events
+                        WHERE        (EventType = 5000) AND (NetObjectType = 'V') AND (Message LIKE '%For Query%')
+                    GROUP BY NetObjectID) AS T1  
+                    INNER JOIN Orion.Volumes ON T1.NetObjectID = Volumes.VolumeID 
+                    LEFT OUTER JOIN orion.Nodes ON Volumes.NodeID = Nodes.NodeID 
+                    LEFT OUTER JOIN Orion.NodesCustomProperties ON Nodes.NodeID = NodesCustomProperties.NodeID
+                    
+        where (Not(volumes.status = '0'  or volumes.status = '12'  or volumes.status ='9' )) AND Volumes.VolumePercentUsed > 90
+        --where (volumes.status = '1'  or volumes.status = '3'  or volumes.status ='14' )
+
+        group BY
+
+        T1.Type,
+        Volumes.VolumeID, 
+        Volumes.FullName,
+        Nodes.IP_Address, 
+        NodesCustomProperties.Customer, 
+        Volumes.VolumePercentUsed,
+        Volumes.Status, 
+        T1.DownTime
+        --order by DownTime Desc
+        )
+
     ) AS TBALL
+
+where
+            -- customer section
+            (NOT 
+            (Customer ='TAFS' OR Customer ='CloudFX' OR Customer ='GS ASTRA') 
+            )
+            AND
+            -- group section
+            (NOT
+            (
+            (Type ='Group' AND Name like 'TAFS -%') OR (Type ='Group' AND Name like 'GS ASTRA -%'))
+            ) 
+            --AND
+            --volumes section
+             
+            -- last 1 hours --
+            --(DownTime > ADDHOUR(-1,GETUTCDATE()))
 
 group BY
 Type,
