@@ -17,13 +17,46 @@ PercentUsed,
 Status,
 
 CASE 
-	WHEN ((Type = 'Nodes' or Type = 'IP SLA') AND Status ='2')
+	WHEN ((Type = 'Nodes' or Type = 'IP SLA' or Type = 'Link') AND Status ='2')
 		THEN 'Down' 
+    WHEN Type = 'Volumes' 
+		THEN (Condition + '% Full') 
 ELSE Condition 
 END AS Condition,
 tolocal(DownTime) AS Since
 From 
       (
+        
+        
+          SELECT
+        T1.Type, 
+        '2' AS [ObjectPriority],
+        Interfaces.InterfaceID AS ObjectID, 
+        Interfaces.FullName AS Name, 
+        '' AS [IP Address],
+        '' AS Customer,
+        '' AS PercentUsed,
+        Interfaces.OperStatus AS Status,
+        tostring(Interfaces.OperStatus) AS Condition,
+        T1.DownTime 
+              
+        FROM 
+
+        (SELECT        MAX(EventTime) AS DownTime, NetObjectID, 'Link' AS Type
+            --, Message
+                                  FROM            orion.Events
+                                  WHERE        (EventType = 5000) AND (Message LIKE 'For Query interface%')
+                                  GROUP BY NetObjectID
+            -- , Message
+                        
+            --        order by DownTime DESC
+            ) AS T1 
+                    INNER JOIN Orion.NPM.Interfaces ON T1.NetObjectID = Interfaces.InterfaceID 
+        where Interfaces.OperStatus ='2'
+                            --order by Interfaces.OperStatus asc
+
+UNION ALL
+        (
         --section 3.IPSLA
         SELECT 
         T1.Type, 
@@ -55,8 +88,10 @@ From
         T1.DownTime
 
         --order by T1.DownTime DESC
+        )
 
-UNION ALL (
+UNION ALL 
+        (
         --section 4.Node
         SELECT 
         T1.Type, 
@@ -140,7 +175,7 @@ UNION ALL (
         Volumes.Status, 
         T1.DownTime
         --order by DownTime Desc
-        )
+        )        
 
     ) AS TBALL
 
@@ -157,7 +192,7 @@ where
             ) 
             --AND
             --volumes section
-             
+            -- AND 
             -- last 1 hours --
             --(DownTime > ADDHOUR(-1,GETUTCDATE()))
 
@@ -172,3 +207,5 @@ PercentUsed,
 Status,
 Condition,
 DownTime
+
+order by ObjectPriority ASC, Down_Time ASC
